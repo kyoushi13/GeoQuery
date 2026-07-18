@@ -30,7 +30,7 @@ Open the project in your preferred IDE.
 ### Or download the zip file
 
 Unzip the file and open the folder in your preferred IDE.
-Then Navigate to the folder via the terminal.
+Then navigate to the folder via the terminal.
 
 ---
 
