@@ -3,7 +3,8 @@ import torch
 from PIL import Image
 from transformers import BlipProcessor, BlipForConditionalGeneration, BlipForQuestionAnswering
 
-DEVICE = "mps" if torch.backends.mps.is_available() else "cpu"
+#DEVICE = "mps" if torch.backends.mps.is_available() else "cpu"
+DEVICE = "cpu"
 
 _cap_processor = None
 _cap_model = None
