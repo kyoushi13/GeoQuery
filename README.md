@@ -38,8 +38,8 @@ python --version
 pip --version
 ```
 
-To run the full stack:
-A) Run the backend:
+# To run the full stack:
+## A) Run the backend:
 in one IDE terminal, run:
 
 ```
@@ -47,7 +47,7 @@ cd backend
 uvicorn main:app --reload --port 8000
 ```
 
-B) Run the frontend:
+## B) Run the frontend:
 Immediately after, in another terminal, run:
 
 ```
@@ -58,7 +58,7 @@ python3 -m http.server 5500
 
 Then go to your browser and open : http://localhost:5500
 
-Instructions for the frontend on the web browser:
+## Instructions for the frontend on the web browser:
 
 1. Drag & drop an image.
 2. Wait for upload.
