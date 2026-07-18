@@ -1,0 +1,248 @@
+<!-- frontend/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>GeoQuery</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: Arial, sans-serif; max-width: 800px; margin: 20px auto; padding: 0 12px; background: #f5f5f5; }
+  h1 { text-align: center; }
+  #upload-zone {
+    border: 2px dashed #888; border-radius: 8px; padding: 30px;
+    text-align: center; cursor: pointer; background: #fff; margin-bottom: 15px;
+  }
+  #upload-zone.dragover { background: #e0f0ff; }
+  #image-display { text-align: center; margin-bottom: 15px; }
+  #image-display img { max-width: 100%; border-radius: 8px; }
+  #chat-window {
+    background: #fff; border-radius: 8px; padding: 15px; height: 350px;
+    overflow-y: auto; margin-bottom: 10px; border: 1px solid #ddd;
+  }
+  .msg { margin: 8px 0; padding: 8px 12px; border-radius: 12px; max-width: 80%; word-wrap: break-word; }
+  .msg.user { background: #d1e7ff; margin-left: auto; text-align: right; }
+  .msg.assistant { background: #eee; margin-right: auto; }
+  #input-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  #question-input { flex: 1; min-width: 150px; padding: 10px; border-radius: 6px; border: 1px solid #ccc; }
+  button { padding: 10px 16px; border: none; border-radius: 6px; background: #007bff; color: white; cursor: pointer; }
+  button:disabled { background: #aaa; cursor: not-allowed; }
+  #error-box { color: red; text-align: center; margin-bottom: 10px; min-height: 20px; }
+  .spinner {
+    display: inline-block; width: 14px; height: 14px; border: 2px solid #ccc;
+    border-top: 2px solid #007bff; border-radius: 50%; animation: spin 0.8s linear infinite;
+    margin-right: 6px; vertical-align: middle;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @media (max-width: 480px) {
+    #chat-window { height: 280px; }
+    .msg { max-width: 90%; }
+  }
+</style>
+</head>
+<body>
+
+<h1>GeoQuery</h1>
+<div id="error-box"></div>
+
+<div id="upload-zone">
+  Drag & drop image here or click to upload (.jpg / .png, max 1024x1024)
+  <input type="file" id="file-input" accept=".jpg,.jpeg,.png" style="display:none">
+</div>
+
+<div id="image-display"></div>
+
+<div id="chat-window"></div>
+
+<div id="input-row">
+  <input type="text" id="question-input" placeholder="Ask about the image..." disabled>
+  <button id="send-btn" disabled>Send</button>
+</div>
+
+<script>
+const API_BASE = "http://localhost:8000";
+const SESSION_ID = "session_" + Date.now();
+
+const uploadZone = document.getElementById("upload-zone");
+const fileInput = document.getElementById("file-input");
+const imageDisplay = document.getElementById("image-display");
+const chatWindow = document.getElementById("chat-window");
+const questionInput = document.getElementById("question-input");
+const sendBtn = document.getElementById("send-btn");
+const errorBox = document.getElementById("error-box");
+
+uploadZone.addEventListener("click", () => fileInput.click());
+uploadZone.addEventListener("dragover", (e) => { e.preventDefault(); uploadZone.classList.add("dragover"); });
+uploadZone.addEventListener("dragleave", () => uploadZone.classList.remove("dragover"));
+uploadZone.addEventListener("drop", (e) => {
+  e.preventDefault();
+  uploadZone.classList.remove("dragover");
+  if (e.dataTransfer.files.length) handleUpload(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener("change", () => {
+  if (fileInput.files.length) handleUpload(fileInput.files[0]);
+});
+
+function showError(msg) {
+  errorBox.textContent = msg;
+  setTimeout(() => errorBox.textContent = "", 5000);
+}
+
+function addMessage(role, text) {
+  const div = document.createElement("div");
+  div.className = "msg " + role;
+  div.textContent = text;
+  chatWindow.appendChild(div);
+  chatWindow.scrollTop = chatWindow.scrollHeight;
+}
+
+// async function handleUpload(file) {
+//   errorBox.textContent = "";
+//   const formData = new FormData();
+//   formData.append("file", file);
+//   formData.append("session_id", SESSION_ID);
+
+//   addMessage("assistant", "Uploading and analyzing image...");
+
+//   try {
+//     const res = await fetch(`${API_BASE}/upload`, { method: "POST", body: formData });
+//     const data = await res.json();
+
+//     if (!res.ok) {
+//       showError(data.detail || "Upload failed.");
+//       chatWindow.removeChild(chatWindow.lastChild);
+//       return;
+//     }
+
+//     imageDisplay.innerHTML = `<img src="data:image/png;base64,${data.annotated_image}" />`;
+//     chatWindow.removeChild(chatWindow.lastChild); // remove "uploading..." msg
+//     addMessage("assistant", `Caption: ${data.caption}`);
+//     addMessage("assistant", `Detected ${data.detections.length} object(s): ` +
+//       data.detections.map(d => `${d.class} (${(d.confidence*100).toFixed(0)}%)`).join(", "));
+
+//     questionInput.disabled = false;
+//     sendBtn.disabled = false;
+//   } catch (err) {
+//     showError("Could not connect to backend. Is it running on port 8000?");
+//   }
+// }
+
+// async function sendQuestion() {
+//   const question = questionInput.value.trim();
+//   if (!question) return;
+
+//   addMessage("user", question);
+//   questionInput.value = "";
+//   sendBtn.disabled = true;
+
+//   const formData = new FormData();
+//   formData.append("question", question);
+//   formData.append("session_id", SESSION_ID);
+
+//   try {
+//     const res = await fetch(`${API_BASE}/query`, { method: "POST", body: formData });
+//     const data = await res.json();
+
+//     if (!res.ok) {
+//       showError(data.detail || "Query failed.");
+//       sendBtn.disabled = false;
+//       return;
+//     }
+
+//     addMessage("assistant", data.text);
+//     if (data.annotated_image) {
+//       imageDisplay.innerHTML = `<img src="data:image/png;base64,${data.annotated_image}" />`;
+//     }
+//   } catch (err) {
+//     showError("Could not connect to backend.");
+//   }
+//   sendBtn.disabled = false;
+// }
+async function handleUpload(file) {
+  errorBox.textContent = "";
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("session_id", SESSION_ID);
+
+  questionInput.disabled = true;
+  sendBtn.disabled = true;
+
+  const loadingMsg = document.createElement("div");
+  loadingMsg.className = "msg assistant";
+  loadingMsg.innerHTML = `<span class="spinner"></span>Analyzing image...`;
+  chatWindow.appendChild(loadingMsg);
+  chatWindow.scrollTop = chatWindow.scrollHeight;
+
+  try {
+    const res = await fetch(`${API_BASE}/upload`, { method: "POST", body: formData });
+    const data = await res.json();
+    chatWindow.removeChild(loadingMsg);
+
+    if (!res.ok) {
+      showError(data.detail || "Upload failed.");
+      return;
+    }
+
+    imageDisplay.innerHTML = `<img src="data:image/png;base64,${data.annotated_image}" />`;
+    addMessage("assistant", `Caption: ${data.caption}`);
+    const objList = data.detections.map(d =>
+      `${d.class} | ${(d.confidence*100).toFixed(0)}% | ${d.size}, ${d.color}`
+    ).join("\n");
+    addMessage("assistant", data.detections.length ? `Detected objects:\n${objList}` : "No objects detected.");
+
+    questionInput.disabled = false;
+    sendBtn.disabled = false;
+  } catch (err) {
+    chatWindow.removeChild(loadingMsg);
+    showError("Could not connect to backend. Is it running on port 8000?");
+  }
+}
+
+async function sendQuestion() {
+  const question = questionInput.value.trim();
+  if (!question) { showError("Question cannot be empty."); return; }
+
+  addMessage("user", question);
+  questionInput.value = "";
+  questionInput.disabled = true;
+  sendBtn.disabled = true;
+
+  const loadingMsg = document.createElement("div");
+  loadingMsg.className = "msg assistant";
+  loadingMsg.innerHTML = `<span class="spinner"></span>Thinking...`;
+  chatWindow.appendChild(loadingMsg);
+  chatWindow.scrollTop = chatWindow.scrollHeight;
+
+  const formData = new FormData();
+  formData.append("question", question);
+  formData.append("session_id", SESSION_ID);
+
+  try {
+    const res = await fetch(`${API_BASE}/query`, { method: "POST", body: formData });
+    const data = await res.json();
+    chatWindow.removeChild(loadingMsg);
+
+    if (!res.ok) {
+      showError(data.detail || "Query failed.");
+      return;
+    }
+
+    addMessage("assistant", data.text);
+    if (data.annotated_image) {
+      imageDisplay.innerHTML = `<img src="data:image/png;base64,${data.annotated_image}" />`;
+    }
+  } catch (err) {
+    chatWindow.removeChild(loadingMsg);
+    showError("Could not connect to backend.");
+  }
+
+  questionInput.disabled = false;
+  sendBtn.disabled = false;
+}
+
+sendBtn.addEventListener("click", sendQuestion);
+questionInput.addEventListener("keypress", (e) => {
+  if (e.key === "Enter") sendQuestion();
+});
+</script>
+</body>
+</html>
