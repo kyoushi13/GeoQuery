@@ -25,8 +25,12 @@ The project combines image captioning, object detection, and visual question ans
 git clone <repository-url>
 cd GeoQuery
 ```
-
 Open the project in your preferred IDE.
+
+### Or download the zip file
+
+Unzip the file and open the folder in your preferred IDE.
+Then Navigate to the folder via the terminal.
 
 ---
 
