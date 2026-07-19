@@ -86,6 +86,13 @@ cd backend
 uvicorn main:app --reload --port 8000
 ```
 
+Ensure you are able to see:
+```
+INFO:     Started server process [23488]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+```
+
 ### Terminal 2 – Frontend
 
 ```bash
